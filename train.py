@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import RandomUniform
-
+import gym
 
 # 상태가 입력, 큐함수가 출력인 인공신경망 생성
 class DQN(tf.keras.Model):
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         # env 초기화
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-
+        print(state)
         while not done:
             if agent.render:
                 env.render()

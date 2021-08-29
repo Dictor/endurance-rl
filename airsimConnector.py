@@ -1,4 +1,5 @@
 # ready to run example: PythonClient/multirotor/hello_drone.py
+import math
 import airsim
 import os
 import threading
@@ -16,15 +17,31 @@ def connect():
     sensorClient.enableApiControl(True)
 
 def takeOff():
+    print("tf")
     controlClient.takeoffAsync().join()
 
+def reset():
+    print("rst")
+    moveOrigin()
+    takeOff()
+
+def moveOrigin():
+    print("mo")
+    position = airsim.Vector3r(0, 0, 0)
+    heading = airsim.utils.to_quaternion(0, 0, 0)
+    pose = airsim.Pose(position, heading)
+    controlClient.simSetVehiclePose(pose, True)
+
 def moveForward():
-    controlClient.moveByRollPitchYawThrottleAsync(1, 0, 0, 3).join()
+    print("mf")
+    controlClient.moveByVelocityAsync(1, 0, 0, 1).join()
 
 def turnLeft():
+    print("ml")
     controlClient.rotateToYawAsync(-30).join()
 
 def turnRight():
+    print("mr")
     controlClient.rotateToYawAsync(30).join()
 
 def getDistance():
@@ -48,7 +65,13 @@ def getBright():
     bl = smallArr[1, 0]
     bc = smallArr[1, 1]
     br = smallArr[1, 2]
+    print("br : {0}".format((bl, bc, br)))
     return (bl, bc, br)
 
 def getGoalDistance():
-    return 10
+    vpos = sensorClient.simGetVehiclePose().position
+    vpos = [vpos.x_val, vpos.y_val, vpos.z_val]
+    gpos = [50, 0, 0]
+    d =  math.sqrt(math.pow(vpos[0] - gpos[0], 2) + math.pow(vpos[1] - gpos[1], 2))
+    print("gd : {0}".format(d))
+    return d

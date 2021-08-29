@@ -1,6 +1,7 @@
-tensorflow==2.1.0
+tensorflow==2.5
 numpy>=1.17.0
 matplotlib>=3.1.1
-gym>=0.16.0
 Pillow>=6.1.0
 scikit-image>=0.15.0
+tf_agents >= 0.9.0
+airsim >= 1.6.0

@@ -1,10 +1,5 @@
-from airsimConnector import connector
+import airsimConnector as connector
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import abc
 import tensorflow as tf
 import numpy as np
 
@@ -29,6 +24,8 @@ class EnduranceEnv(py_environment.PyEnvironment):
         shape=(3,), dtype=np.int32, minimum=0, maximum=20, name='observation')
     self._state = 0
     self._episode_ended = False
+    connector.connect()
+    connector.reset()
 
   def action_spec(self):
     return self._action_spec
@@ -46,7 +43,10 @@ class EnduranceEnv(py_environment.PyEnvironment):
     if self._episode_ended:
       # The last action ended the episode. Ignore the current action and start
       # a new episode.
+      connector.reset()
       return self.reset()
+
+    print("action: {0}".format(action))
 
     # Make sure episodes don't go on forever.
     if action == 0:
@@ -59,13 +59,16 @@ class EnduranceEnv(py_environment.PyEnvironment):
       connector.turnRight()
       self._state = action
     else:
-      raise ValueError('`action` should be 0 or 1.')
+      raise ValueError('action value should be 0 ~ 2.')
 
-    if self._episode_ended or connector.getGoalDistance() < 1:
+    bright = connector.getBright()
+    bright = [bright[0] / 255, bright[1] / 255, bright[0] / 255]
+    goalDistance = connector.getGoalDistance()
+
+    if self._episode_ended or goalDistance < 1:
       # found goal
       self._episode_ended = True
-      return ts.termination(np.array([self._state], dtype=np.int32), reward=10)
+      return ts.termination(bright, reward=10)
     else:
       # not found goal
-      return ts.transition(
-          np.array([self._state], dtype=np.int32), reward=-0.3, discount=-1/connector.getGoalDistance())
+      return ts.transition(bright, reward=-0.3, discount=1)

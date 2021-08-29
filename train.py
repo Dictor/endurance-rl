@@ -1,6 +1,5 @@
 import os
 import sys
-import pylab
 import random
 import numpy as np
 from collections import deque
@@ -8,7 +7,9 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import RandomUniform
-import gym
+from env import EnduranceEnv
+from tf_agents.environments import tf_py_environment
+import pylab
 
 # 상태가 입력, 큐함수가 출력인 인공신경망 생성
 class DQN(tf.keras.Model):
@@ -109,9 +110,9 @@ class DQNAgent:
 
 if __name__ == "__main__":
     # CartPole-v1 환경, 최대 타임스텝 수가 500
-    env = gym.make('CartPole-v1')
-    state_size = env.observation_space.shape[0]
-    action_size = env.action_space.n
+    env = tf_py_environment.TFPyEnvironment(EnduranceEnv())
+    state_size = 3
+    action_size = 1
 
     # DQN 에이전트 생성
     agent = DQNAgent(state_size, action_size)
@@ -125,8 +126,9 @@ if __name__ == "__main__":
         score = 0
         # env 초기화
         state = env.reset()
-        state = np.reshape(state, [1, state_size])
-        print(state)
+        #print(state)
+        #state = np.reshape(state, [1, state_size])
+
         while not done:
             if agent.render:
                 env.render()
@@ -135,7 +137,7 @@ if __name__ == "__main__":
             action = agent.get_action(state)
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_state, reward, done, info = env.step(action)
-            next_state = np.reshape(next_state, [1, state_size])
+            #next_state = np.reshape(next_state, [1, state_size])
 
             # 타임스텝마다 보상 0.1, 에피소드가 중간에 끝나면 -1 보상
             score += reward
@@ -154,8 +156,8 @@ if __name__ == "__main__":
                 agent.update_target_model()
                 # 에피소드마다 학습 결과 출력
                 score_avg = 0.9 * score_avg + 0.1 * score if score_avg != 0 else score
-                print("episode: {:3d} | score avg: {:3.2f} | memory length: {:4d} | epsilon: {:.4f}".format(
-                      e, score_avg, len(agent.memory), agent.epsilon))
+                #print("episode: {:3d} | score avg: {:3.2f} | memory length: {:4d} | epsilon: {:.4f}".format(e, score_avg, len(agent.memory), agent.epsilon))
+                print("episode: {:3d}".format(e))
 
                 # 에피소드마다 학습 결과 그래프로 저장
                 scores.append(score_avg)
@@ -163,7 +165,7 @@ if __name__ == "__main__":
                 pylab.plot(episodes, scores, 'b')
                 pylab.xlabel("episode")
                 pylab.ylabel("average score")
-                pylab.savefig("./save_graph/graph.png")
+                pylab.savefig("./graph.png")
 
                 # 이동 평균이 400 이상일 때 종료
                 if score_avg > 400:

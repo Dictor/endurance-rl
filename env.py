@@ -49,17 +49,23 @@ class EnduranceEnv(py_environment.PyEnvironment):
       return self.reset()
 
     # Make sure episodes don't go on forever.
-    if action == 1:
-      self._episode_ended = True
-    elif action == 0:
-      new_card = np.random.randint(1, 11)
-      self._state += new_card
+    if action == 0:
+      connector.moveForward()
+      self._state = action
+    elif action == 1:
+      connector.turnLeft()
+      self._state = action
+    elif action == 2:
+      connector.turnRight()
+      self._state = action
     else:
       raise ValueError('`action` should be 0 or 1.')
 
-    if self._episode_ended or self._state >= 21:
-      reward = self._state - 21 if self._state <= 21 else -21
-      return ts.termination(np.array([self._state], dtype=np.int32), reward)
+    if self._episode_ended or connector.getGoalDistance() < 1:
+      # found goal
+      self._episode_ended = True
+      return ts.termination(np.array([self._state], dtype=np.int32), reward=10)
     else:
+      # not found goal
       return ts.transition(
-          np.array([self._state], dtype=np.int32), reward=0.0, discount=1.0)
+          np.array([self._state], dtype=np.int32), reward=-0.3, discount=-1/connector.getGoalDistance())

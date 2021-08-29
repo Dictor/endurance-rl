@@ -49,3 +49,6 @@ def getBright():
     bc = smallArr[1, 1]
     br = smallArr[1, 2]
     return (bl, bc, br)
+
+def getGoalDistance():
+    return 10

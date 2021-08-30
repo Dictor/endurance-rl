@@ -1,12 +1,19 @@
+# origin source from https://gist.github.com/f3l3gy/0e89dde158dde024959e36e915abf6bd
+
 if (Test-Path -Path "./WindowsNoEditor") {
-    "release already exists!"
-    Pause
-    Exit
+    Write-Host "release already exists! exisiting release will be deleted and replaced to new. type 'y' for continue" -BackgroundColor 'White' -ForegroundColor 'Red'
+    $ans = Read-Host
+    if ($ans -ne "y") {
+        Exit
+    }
 }
 
 # Download latest dotnet/codeformatter release from github
 $repo = "dictor/endurance-environment"
 $file = "WindowsNoEditor.zip"
+$name = $file.Split(".")[0]
+Write-Host "Remove existing"
+Remove-Item -Path $name -Recurse
 
 $releases = "https://api.github.com/repos/$repo/releases"
 
@@ -15,7 +22,6 @@ Write-Host Determining latest release
 $tag = (Invoke-WebRequest -Uri $releases -UseBasicParsing | ConvertFrom-Json)[0].tag_name
 
 $download = "https://github.com/$repo/releases/download/$tag/$file"
-$name = $file.Split(".")[0]
 $zip = "$name-$tag.zip"
 $dir = "$name-$tag"
 

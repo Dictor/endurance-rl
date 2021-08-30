@@ -111,8 +111,8 @@ class DQNAgent:
 if __name__ == "__main__":
     # CartPole-v1 환경, 최대 타임스텝 수가 500
     env = tf_py_environment.TFPyEnvironment(EnduranceEnv())
-    state_size = 3
-    action_size = 1
+    state_size = 4
+    action_size = 4
 
     # DQN 에이전트 생성
     agent = DQNAgent(state_size, action_size)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     scores, episodes = [], []
     score_avg = 0
 
-    num_episode = 300
+    num_episode = 3000
     for e in range(num_episode):
         done = False
         score = 0

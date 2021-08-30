@@ -34,7 +34,7 @@ def moveOrigin():
 
 def moveForward():
     print("mf")
-    controlClient.moveByVelocityAsync(1, 0, 0, 1).join()
+    controlClient.moveByVelocityAsync(3, 0, 0, 1).join()
 
 def turnLeft():
     print("ml")

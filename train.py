@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # CartPole-v1 환경, 최대 타임스텝 수가 500
     env = tf_py_environment.TFPyEnvironment(EnduranceEnv())
     state_size = 4
-    action_size = 4
+    action_size = 3
 
     # DQN 에이전트 생성
     agent = DQNAgent(state_size, action_size)

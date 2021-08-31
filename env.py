@@ -19,7 +19,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
     def __init__(self):
         # action: front, turn left, turn right
         self._action_spec = array_spec.BoundedArraySpec(
-            shape=(), dtype=np.int32, minimum=0, maximum=3, name='action')
+            shape=(), dtype=np.int32, minimum=0, maximum=2, name='action')
         # observation: 3 sensors (left, center, right), senser values are divided by 20 levels.
         self._observation_spec = array_spec.BoundedArraySpec(
             shape=(1, 4), dtype=np.int32, minimum=0, maximum=60, name='observation')
@@ -50,12 +50,10 @@ class EnduranceEnv(py_environment.PyEnvironment):
 
         # Make sure episodes don't go on forever.
         if action == 0:
-            self._episode_ended = True
-        elif action == 1:
             connector.moveForward()
-        elif action == 2:
+        elif action == 1:
             connector.turnLeft()
-        elif action == 3:
+        elif action == 2:
             connector.turnRight()
         else:
             raise ValueError('action value should be 0 ~ 2.')
@@ -72,7 +70,5 @@ class EnduranceEnv(py_environment.PyEnvironment):
             self._episode_ended = True
             return ts.termination([self._state], 1)
         else:
-            if self._episode_ended:
-                return ts.termination([self._state], -1)
             # not found goal
             return ts.transition([self._state], reward=-0.05, discount=1)

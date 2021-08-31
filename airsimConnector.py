@@ -65,7 +65,6 @@ def getBright():
     bl = smallArr[1, 0]
     bc = smallArr[1, 1]
     br = smallArr[1, 2]
-    print("br : {0}".format((bl, bc, br)))
     return (bl, bc, br)
 
 def getGoalDistance():
@@ -73,5 +72,8 @@ def getGoalDistance():
     vpos = [vpos.x_val, vpos.y_val, vpos.z_val]
     gpos = [50, 0, 0]
     d =  math.sqrt(math.pow(vpos[0] - gpos[0], 2) + math.pow(vpos[1] - gpos[1], 2))
-    print("gd : {0}".format(d))
     return d
+
+def isCollided():
+    c = sensorClient.simGetCollisionInfo()
+    return c.has_collided

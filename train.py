@@ -111,7 +111,7 @@ class DQNAgent:
 if __name__ == "__main__":
     # CartPole-v1 환경, 최대 타임스텝 수가 500
     env = tf_py_environment.TFPyEnvironment(EnduranceEnv())
-    state_size = 4
+    state_size = 7
     action_size = 3
 
     # DQN 에이전트 생성
@@ -156,8 +156,8 @@ if __name__ == "__main__":
                 agent.update_target_model()
                 # 에피소드마다 학습 결과 출력
                 score_avg = 0.9 * score_avg + 0.1 * score if score_avg != 0 else score
-                #print("episode: {:3d} | score avg: {:3.2f} | memory length: {:4d} | epsilon: {:.4f}".format(e, score_avg, len(agent.memory), agent.epsilon))
-                print("episode: {:3d}".format(e))
+                print("\n\nepisode: {:3d} | score avg: {:f} | memory length: {:4d} | epsilon: {:.4f}".format(e, score_avg.numpy()[0], len(agent.memory), agent.epsilon))
+                #print("episode: {:3d}".format(e))
 
                 # 에피소드마다 학습 결과 그래프로 저장
                 scores.append(score_avg)

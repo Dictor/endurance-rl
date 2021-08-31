@@ -22,8 +22,8 @@ class EnduranceEnv(py_environment.PyEnvironment):
             shape=(), dtype=np.int32, minimum=0, maximum=2, name='action')
         # observation: 3 sensors (left, center, right), senser values are divided by 20 levels.
         self._observation_spec = array_spec.BoundedArraySpec(
-            shape=(1, 4), dtype=np.int32, minimum=0, maximum=60, name='observation')
-        self._state = [0, 0, 0, 0]
+            shape=(1, 7), dtype=np.int32, minimum=0, maximum=60, name='observation')
+        self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
         connector.connect()
         connector.reset()
@@ -35,7 +35,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
         return self._observation_spec
 
     def _reset(self):
-        self._state = [0, 0, 0, 0]
+        self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
         return ts.restart(np.array([self._state], dtype=np.int32))
 
@@ -45,8 +45,6 @@ class EnduranceEnv(py_environment.PyEnvironment):
             # a new episode.
             connector.reset()
             return self.reset()
-
-        print("action: {0}".format(action))
 
         # Make sure episodes don't go on forever.
         if action == 0:
@@ -59,16 +57,21 @@ class EnduranceEnv(py_environment.PyEnvironment):
             raise ValueError('action value should be 0 ~ 2.')
 
         bright = connector.getBright()
+        distance = connector.getDistance()
         goalDistance = connector.getGoalDistance()
-        self._state = [((bright[0] / 2) - 10) * 5, ((bright[1] / 2) - 10) * 5, ((bright[2] / 2) - 10) * 5, goalDistance]
+        self._state = [(bright[0] / 255) * 600, (bright[1] / 255) * 600, (bright[2] / 255) * 600, distance[0], distance[1], distance[2], distance[3]]
         print("state : {0}".format(self._state))
-        
+        print("gd : {0}".format(goalDistance))
 
         
-        if goalDistance < 10:
+        if goalDistance < 3:
             # found goal
             self._episode_ended = True
             return ts.termination([self._state], 1)
         else:
             # not found goal
-            return ts.transition([self._state], reward=-0.05, discount=1)
+            if connector.isCollided():
+                print("colided!")
+                self._episode_ended = True
+                return ts.termination([self._state], -1)
+            return ts.transition([self._state], reward=-0.05 + ((60 - goalDistance) / (60)), discount=0.05)

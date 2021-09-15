@@ -1,3 +1,3 @@
 @echo off
-%cd%\WindowsNoEditor\Blocks.exe --settings %cd%\settings.json
-pause
+start %cd%\WindowsNoEditor\Blocks.exe --settings %cd%\setting1.json
+start %cd%\WindowsNoEditor\Blocks.exe --settings %cd%\setting2.json

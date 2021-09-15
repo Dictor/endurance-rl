@@ -1,4 +1,5 @@
-import airsimConnector as connector
+from types import DynamicClassAttribute
+from airsimConnector import airsimConnector
 
 import tensorflow as tf
 import numpy as np
@@ -16,17 +17,18 @@ tf.compat.v1.enable_v2_behavior()
 
 
 class EnduranceEnv(py_environment.PyEnvironment):
-    def __init__(self):
+    def __init__(self, airsimPort, envName):
         # action: front, turn left, turn right
         self._action_spec = array_spec.BoundedArraySpec(
             shape=(), dtype=np.int32, minimum=0, maximum=2, name='action')
         # observation: 3 sensors (left, center, right), senser values are divided by 20 levels.
         self._observation_spec = array_spec.BoundedArraySpec(
-            shape=(1, 7), dtype=np.int32, minimum=0, maximum=60, name='observation')
+            shape=(7, ), dtype=np.float, minimum=0, name='observation')
         self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
-        connector.connect()
-        connector.reset()
+        self.connector = airsimConnector(airsimPort, envName)
+        self.connector.connect()
+        self.connector.reset()
 
     def action_spec(self):
         return self._action_spec
@@ -37,41 +39,41 @@ class EnduranceEnv(py_environment.PyEnvironment):
     def _reset(self):
         self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
-        return ts.restart(np.array([self._state], dtype=np.int32))
+        return ts.restart(np.array(self._state, dtype=np.float))
 
     def _step(self, action):
         if self._episode_ended:
             # The last action ended the episode. Ignore the current action and start
             # a new episode.
-            connector.reset()
+            self.connector.reset()
             return self.reset()
 
         # Make sure episodes don't go on forever.
         if action == 0:
-            connector.moveForward()
+            self.connector.moveForward()
         elif action == 1:
-            connector.turnLeft()
+            self.connector.turnLeft()
         elif action == 2:
-            connector.turnRight()
+            self.connector.turnRight()
         else:
             raise ValueError('action value should be 0 ~ 2.')
 
-        bright = connector.getBright()
-        distance = connector.getDistance()
-        goalDistance = connector.getGoalDistance()
-        self._state = [(bright[0] / 255) * 600, (bright[1] / 255) * 600, (bright[2] / 255) * 600, distance[0], distance[1], distance[2], distance[3]]
+        bright = self.connector.getBright()
+        distance = self.connector.getDistance()
+        goalDistance = self.connector.getGoalDistance()
+        self._state = [(bright[0] / 255) * 600, (bright[1] / 255) * 600,
+                       (bright[2] / 255) * 600, distance[0], distance[1], distance[2], distance[3]]
         print("state : {0}".format(self._state))
         print("gd : {0}".format(goalDistance))
 
-        
         if goalDistance < 3:
             # found goal
             self._episode_ended = True
-            return ts.termination([self._state], 1)
+            return ts.termination(np.array(self._state, dtype=np.float), 1)
         else:
             # not found goal
-            if connector.isCollided():
+            if self.connector.isCollided():
                 print("colided!")
                 self._episode_ended = True
-                return ts.termination([self._state], -1)
-            return ts.transition([self._state], reward=-0.05 + ((60 - goalDistance) / (60)), discount=0.05)
+                return ts.termination(np.array(self._state, dtype=np.float), -1)
+            return ts.transition(np.array(self._state, dtype=np.float), reward=-0.05 + ((60 - goalDistance) / (60)), discount=1)

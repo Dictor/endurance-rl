@@ -1,0 +1,50 @@
+{
+  "SeeDocsAt": "https://github.com/Microsoft/AirSim/blob/master/docs/settings.md",
+  "SettingsVersion": 1.2,
+  "ApiServerPort": 40000,
+  "SimMode": "Multirotor",
+  "Vehicles": {
+    "SimpleFlight": {
+      "VehicleType": "SimpleFlight",
+      "DefaultVehicleState": "Armed",
+      "Sensors": {
+        "DistanceForward": {
+          "SensorType": 5,
+          "Enabled" : true,
+          "MinDistance": 0.2,
+          "MaxDistance": 10,
+          "X": 1, "Y": 0, "Z": 0,
+          "Yaw": 0, "Pitch": 0, "Roll": 0,
+          "DrawDebugPoints": false
+        },
+        "DistanceBack": {
+          "SensorType": 5,
+          "Enabled" : true,
+          "MinDistance": 0.2,
+          "MaxDistance": 10,
+          "X": -1, "Y": 0, "Z": 0,
+          "Yaw": 0, "Pitch": 0, "Roll": 0,
+          "DrawDebugPoints": false
+        },
+        "DistanceLeft": {
+          "SensorType": 5,
+          "Enabled" : true,
+          "MinDistance": 0.2,
+          "MaxDistance": 10,
+          "X": 0, "Y": -1, "Z": 0,
+          "Yaw": 0, "Pitch": 0, "Roll": 0,
+          "DrawDebugPoints": false
+        },
+        "DistanceRight": {
+          "SensorType": 5,
+          "Enabled" : true,
+          "MinDistance": 0.2,
+          "MaxDistance": 10,
+          "X": 1, "Y": 1, "Z": 0,
+          "Yaw": 0, "Pitch": 0, "Roll": 0,
+          "DrawDebugPoints": false
+        }
+      }
+    }
+  }
+}

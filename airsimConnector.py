@@ -5,9 +5,13 @@ import os
 import threading
 import numpy as np
 from PIL import Image
+import time
 
+controlLock = threading.Lock()
 controlClient = airsim.MultirotorClient()
 sensorClient = airsim.MultirotorClient()
+yaw = 0
+
 
 def connect():
     controlClient.confirmConnection()
@@ -16,48 +20,78 @@ def connect():
     sensorClient.confirmConnection()
     sensorClient.enableApiControl(True)
 
+
 def takeOff():
     print("tf")
     controlClient.takeoffAsync().join()
+
 
 def reset():
     print("rst")
     moveOrigin()
     takeOff()
 
+
 def moveOrigin():
+    controlLock.acquire()
     print("mo")
     position = airsim.Vector3r(0, 0, 0)
     heading = airsim.utils.to_quaternion(0, 0, 0)
     pose = airsim.Pose(position, heading)
     controlClient.simSetVehiclePose(pose, True)
+    controlLock.release()
+
 
 def moveForward():
+    controlLock.acquire()
     print("mf")
-    controlClient.moveByVelocityAsync(3, 0, 0, 1).join()
+    yaw = addYawAngle(0)
+    yaw = (yaw / 360) * (2 * math.pi)
+    vx = math.cos(yaw) * 2
+    vy = math.sin(yaw) * 2
+    print(yaw, vx, vy)
+    controlClient.moveByVelocityAsync(vx, vy, 0, 2).join()
+    controlLock.release()
+    time.sleep(0.5)
+
 
 def turnLeft():
+    controlLock.acquire()
     print("ml")
-    controlClient.rotateToYawAsync(-30).join()
+    controlClient.rotateToYawAsync(addYawAngle(-30)).join()
+    controlLock.release()
+    time.sleep(0.5)
+
 
 def turnRight():
+    controlLock.acquire()
     print("mr")
-    controlClient.rotateToYawAsync(30).join()
+    controlClient.rotateToYawAsync(addYawAngle(30)).join()
+    controlLock.release()
+    time.sleep(0.5)
+
 
 def getDistance():
-    df = sensorClient.getDistanceSensorData(distance_sensor_name = "DistanceForward").distance
-    db = sensorClient.getDistanceSensorData(distance_sensor_name = "DistanceBack").distance
-    dl = sensorClient.getDistanceSensorData(distance_sensor_name = "DistanceLeft").distance
-    dr = sensorClient.getDistanceSensorData(distance_sensor_name = "DistanceRight").distance
+    df = sensorClient.getDistanceSensorData(
+        distance_sensor_name="DistanceForward").distance
+    db = sensorClient.getDistanceSensorData(
+        distance_sensor_name="DistanceBack").distance
+    dl = sensorClient.getDistanceSensorData(
+        distance_sensor_name="DistanceLeft").distance
+    dr = sensorClient.getDistanceSensorData(
+        distance_sensor_name="DistanceRight").distance
     return (df, db, dl, dr)
 
+
 def getBright():
-    ret = sensorClient.simGetImages([airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)])[0]
-    img1d = np.fromstring(ret.image_data_uint8, dtype=np.uint8) #get numpy array
+    ret = sensorClient.simGetImages(
+        [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)])[0]
+    img1d = np.fromstring(ret.image_data_uint8,
+                          dtype=np.uint8)  # get numpy array
     smallImg = img1d.reshape(ret.height, ret.width, 3)
-    r = smallImg[:,:,0]
-    g = smallImg[:,:,1]
-    b = smallImg[:,:,2]
+    r = smallImg[:, :, 0]
+    g = smallImg[:, :, 1]
+    b = smallImg[:, :, 2]
     grayArr = 0.2989 * r + 0.5870 * g + 0.1140 * b
     grayImg = Image.fromarray(grayArr)
     grayImg.thumbnail([3, 3])
@@ -67,13 +101,26 @@ def getBright():
     br = smallArr[1, 2]
     return (bl, bc, br)
 
+
 def getGoalDistance():
     vpos = sensorClient.simGetVehiclePose().position
     vpos = [vpos.x_val, vpos.y_val, vpos.z_val]
     gpos = [50, 0, 0]
-    d =  math.sqrt(math.pow(vpos[0] - gpos[0], 2) + math.pow(vpos[1] - gpos[1], 2))
+    d = math.sqrt(math.pow(vpos[0] - gpos[0], 2) +
+                  math.pow(vpos[1] - gpos[1], 2))
     return d
+
 
 def isCollided():
     c = sensorClient.simGetCollisionInfo()
     return c.has_collided
+
+
+def addYawAngle(v):
+    global yaw
+    yaw = yaw + v
+    if yaw > 360:
+        yaw = yaw - 360
+    elif yaw < -360:
+        yaw = yaw + 360
+    return yaw

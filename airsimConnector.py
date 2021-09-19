@@ -17,6 +17,7 @@ class airsimConnector():
         self.yaw = 0
 
     def print(self, v):
+        return
         print("[{0}] {1}".format(self.name, v))
 
     def connect(self):
@@ -25,6 +26,7 @@ class airsimConnector():
         self.controlClient.armDisarm(True)
         self.sensorClient.confirmConnection()
         self.sensorClient.enableApiControl(True)
+        self.sensorClient.takeoffAsync().join()
 
     def takeOff(self):
         self.print("take off")
@@ -32,17 +34,18 @@ class airsimConnector():
 
     def reset(self):
         self.print("reset")
+        self.yaw = 0
         self.moveOrigin()
-        self.takeOff()
-        self.takeOff()
 
     def moveOrigin(self):
         self.controlLock.acquire()
         self.print("move origin")
-        position = airsim.Vector3r(0, 0, 0)
+        position = airsim.Vector3r(0, 0, -8)
         heading = airsim.utils.to_quaternion(0, 0, 0)
         pose = airsim.Pose(position, heading)
-        self.controlClient.simSetVehiclePose(pose, True)
+        self.controlClient.moveByVelocityAsync(0, 0, 0, 0.5).join()
+        self.controlClient.simSetVehiclePose(pose, False)
+        time.sleep(3)
         self.controlLock.release()
 
     def moveForward(self):
@@ -50,25 +53,22 @@ class airsimConnector():
         yaw = self.addYawAngle(0)
         self.print("move front, yaw={0}".format(yaw))
         yaw = (yaw / 360) * (2 * math.pi)
-        vx = math.cos(yaw) * 2
-        vy = math.sin(yaw) * 2
-        self.controlClient.moveByVelocityAsync(vx, vy, 0, 2).join()
+        vx = math.cos(yaw) * 2.5
+        vy = math.sin(yaw) * 2.5
+        self.controlClient.moveByVelocityAsync(vx, vy, 0, 1).join()
         self.controlLock.release()
-        time.sleep(0.5)
 
     def turnLeft(self):
         self.controlLock.acquire()
         self.print("turn left")
-        self.controlClient.rotateToYawAsync(self.addYawAngle(-30)).join()
+        self.controlClient.rotateToYawAsync(self.addYawAngle(-15)).join()
         self.controlLock.release()
-        time.sleep(0.5)
 
     def turnRight(self):
         self.controlLock.acquire()
         self.print("turn right")
-        self.controlClient.rotateToYawAsync(self.addYawAngle(30)).join()
+        self.controlClient.rotateToYawAsync(self.addYawAngle(15)).join()
         self.controlLock.release()
-        time.sleep(0.5)
 
     def getDistance(self):
         df = self.sensorClient.getDistanceSensorData(
@@ -102,7 +102,8 @@ class airsimConnector():
     def getGoalDistance(self):
         vpos = self.sensorClient.simGetVehiclePose().position
         vpos = [vpos.x_val, vpos.y_val, vpos.z_val]
-        gpos = [50, 0, 0]
+        self.print("vpos:{0}".format(vpos))
+        gpos = [60, 30, 0]
         d = math.sqrt(math.pow(vpos[0] - gpos[0], 2) +
                       math.pow(vpos[1] - gpos[1], 2))
         return d

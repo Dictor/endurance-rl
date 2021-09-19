@@ -63,17 +63,23 @@ class EnduranceEnv(py_environment.PyEnvironment):
         goalDistance = self.connector.getGoalDistance()
         self._state = [(bright[0] / 255) * 600, (bright[1] / 255) * 600,
                        (bright[2] / 255) * 600, distance[0], distance[1], distance[2], distance[3]]
-        print("state : {0}".format(self._state))
-        print("gd : {0}".format(goalDistance))
 
-        if goalDistance < 3:
+        if goalDistance < 8:
             # found goal
             self._episode_ended = True
-            return ts.termination(np.array(self._state, dtype=np.float), 1)
+            print("[EnduranceEnv] termination: goal reached")
+            return ts.termination(np.array(self._state, dtype=np.float), 20)
         else:
             # not found goal
             if self.connector.isCollided():
-                print("colided!")
                 self._episode_ended = True
-                return ts.termination(np.array(self._state, dtype=np.float), -1)
-            return ts.transition(np.array(self._state, dtype=np.float), reward=-0.05 + ((60 - goalDistance) / (60)), discount=1)
+                print("[EnduranceEnv] termination: colided")
+                return ts.termination(np.array(self._state, dtype=np.float), -20)
+
+            r = -0.05
+            if goalDistance > 30:
+                r -= (goalDistance - 30) / 10
+            else:
+                r += (30 - goalDistance)
+            print("[EnduranceEnv] transition: reward={:.3f}".format(r))
+            return ts.transition(np.array(self._state, dtype=np.float), reward=r, discount=1)

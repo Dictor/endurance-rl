@@ -1,17 +1,21 @@
-import airsimConnector
+from airsimConnector import airsimConnector
 
-airsimConnector.connect()
-airsimConnector.reset()
+conn = airsimConnector(int(input("port=")), "eval")
 
 while True:
+    print("distance: ", conn.getDistance())
+    print("bright: ", conn.getBright())
+    print("goal distance: ", conn.getGoalDistance())
     i = input()
     if i == "t":
-        airsimConnector.takeOff()
+        conn.takeOff()
     elif i == "r":
-        airsimConnector.turnRight()
+        conn.turnRight()
     elif i == "l":
-        airsimConnector.turnLeft()
+        conn.turnLeft()
     elif i == "f":
-        airsimConnector.moveForward()
+        conn.moveForward()
     elif i == "q":
         exit()
+    elif i == "o":
+        conn.moveOrigin()

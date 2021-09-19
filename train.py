@@ -12,6 +12,8 @@ from tf_agents.environments import tf_py_environment
 import pylab
 
 # 상태가 입력, 큐함수가 출력인 인공신경망 생성
+
+
 class DQN(tf.keras.Model):
     def __init__(self, action_size):
         super(DQN, self).__init__()
@@ -120,14 +122,14 @@ if __name__ == "__main__":
     scores, episodes = [], []
     score_avg = 0
 
-    num_episode = 3000
+    num_episode = 200
     for e in range(num_episode):
         done = False
         score = 0
         # env 초기화
         state = env.reset()
-        #print(state)
-        #state = np.reshape(state, [1, state_size])
+        # print(state)
+        state = np.reshape(state, [1, state_size])
 
         while not done:
             if agent.render:
@@ -137,11 +139,11 @@ if __name__ == "__main__":
             action = agent.get_action(state)
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_state, reward, done, info = env.step(action)
-            #next_state = np.reshape(next_state, [1, state_size])
+            next_state = np.reshape(next_state, [1, state_size])
 
             # 타임스텝마다 보상 0.1, 에피소드가 중간에 끝나면 -1 보상
             score += reward
-            reward = 0.1 if not done or score == 500 else -1
+            #reward = 0.1 if not done or score == 500 else -1
 
             # 리플레이 메모리에 샘플 <s, a, r, s'> 저장
             agent.append_sample(state, action, reward, next_state, done)
@@ -156,8 +158,8 @@ if __name__ == "__main__":
                 agent.update_target_model()
                 # 에피소드마다 학습 결과 출력
                 score_avg = 0.9 * score_avg + 0.1 * score if score_avg != 0 else score
-                print("\n\nepisode: {:3d} | score avg: {:f} | memory length: {:4d} | epsilon: {:.4f}".format(e, score_avg.numpy()[0], len(agent.memory), agent.epsilon))
-                #print("episode: {:3d}".format(e))
+                print("\n\nepisode: {:3d} | score avg: {:f} | memory length: {:4d} | epsilon: {:.4f}".format(
+                    e, score_avg.numpy()[0], len(agent.memory), agent.epsilon))
 
                 # 에피소드마다 학습 결과 그래프로 저장
                 scores.append(score_avg)
@@ -168,6 +170,7 @@ if __name__ == "__main__":
                 pylab.savefig("./graph.png")
 
                 # 이동 평균이 400 이상일 때 종료
-                if score_avg > 400:
-                    agent.model.save_weights("./save_model/model", save_format="tf")
+                if score_avg > 1:
+                    agent.model.save_weights(
+                        "./save_model/model", save_format="tf")
                     sys.exit()

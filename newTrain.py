@@ -3,7 +3,7 @@ import imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import PIL.Image
+import os
 
 import tensorflow as tf
 
@@ -22,8 +22,11 @@ from tf_agents.networks import q_network
 
 from env import EnduranceEnv
 
+if not os.path.exists("checkpoint"):
+    os.makedirs("checkpoint")
+
 # hyper params
-num_iterations = 5000  # @param {type:"integer"}
+num_iterations = 20000  # @param {type:"integer"}
 
 initial_collect_steps = 1000  # @param {type:"integer"}
 collect_steps_per_iteration = 1  # @param {type:"integer"}
@@ -31,10 +34,10 @@ replay_buffer_max_length = 100000  # @param {type:"integer"}
 
 batch_size = 64  # @param {type:"integer"}
 learning_rate = 1e-3  # @param {type:"number"}
-log_interval = 100  # @param {type:"integer"}
+log_interval = 50  # @param {type:"integer"}
 
-num_eval_episodes = 10  # @param {type:"integer"}
-eval_interval = 500  # @param {type:"integer"}
+num_eval_episodes = 150  # @param {type:"integer"}
+eval_interval = 1000  # @param {type:"integer"}
 
 # environment
 eval_py_env = EnduranceEnv(40000, "eval")
@@ -108,9 +111,16 @@ def collect_data(env, policy, buffer, steps):
 
 
 print("--- fill replay buffer start")
-collect_data(train_env, random_policy, replay_buffer, initial_collect_steps)
-cp = tf.train.Checkpoint(rb=replay_buffer)
-cp.save("replay_buffer")
+if os.path.exists("checkpoint/checkpoint"):
+    print("checkpoint exist! open existing replay buffer")
+    cp = tf.train.Checkpoint(rb=replay_buffer)
+    cp.restore("checkpoint/replay_buffer-1")
+    replay_buffer.get_next()
+else:
+    collect_data(train_env, random_policy,
+                 replay_buffer, initial_collect_steps)
+    cp = tf.train.Checkpoint(rb=replay_buffer)
+    cp.save("checkpoint/replay_buffer")
 print("--- fill replay buffer complete")
 
 # dataset
@@ -131,7 +141,7 @@ avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
 returns = [avg_return]
 
 for i in range(num_iterations):
-    print("[iteration]: {0}".format(i))
+    #print("[training iteration]: {0}".format(i))
     # Collect a few steps using collect_policy and save to the replay buffer.
     collect_data(train_env, agent.collect_policy,
                  replay_buffer, collect_steps_per_iteration)

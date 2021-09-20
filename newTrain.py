@@ -26,7 +26,7 @@ if not os.path.exists("checkpoint"):
     os.makedirs("checkpoint")
 
 # hyper params
-num_iterations = 20000  # @param {type:"integer"}
+num_iterations = 1800  # @param {type:"integer"}
 
 initial_collect_steps = 1000  # @param {type:"integer"}
 collect_steps_per_iteration = 1  # @param {type:"integer"}
@@ -37,7 +37,7 @@ learning_rate = 1e-3  # @param {type:"number"}
 log_interval = 50  # @param {type:"integer"}
 
 num_eval_episodes = 150  # @param {type:"integer"}
-eval_interval = 1000  # @param {type:"integer"}
+eval_interval = 600  # @param {type:"integer"}
 
 # environment
 eval_py_env = EnduranceEnv(40000, "eval")
@@ -70,7 +70,7 @@ random_policy = random_tf_policy.RandomTFPolicy(train_env.time_step_spec(),
 
 
 def compute_avg_return(environment, policy, num_episodes=10):
-    print("policy:", policy)
+    print("[compute_avg_return] start, episode num = {0}".format(num_episodes))
     total_return = 0.0
     for e in range(num_episodes):
 
@@ -78,7 +78,7 @@ def compute_avg_return(environment, policy, num_episodes=10):
         episode_return = 0.0
         i = 0
         while not time_step.is_last():
-            print("[compute_avg_return] episode: {0} step: {1}".format(e, i))
+            #print("[compute_avg_return] episode: {0} step: {1}".format(e, i))
             action_step = policy.action(time_step)
             time_step = environment.step(action_step.action)
             episode_return += time_step.reward
@@ -86,7 +86,9 @@ def compute_avg_return(environment, policy, num_episodes=10):
         total_return += episode_return
 
     avg_return = total_return / num_episodes
-    return avg_return.numpy()[0]
+    rtn = avg_return.numpy()[0]
+    print("[compute_avg_return] complete, avg_rtn={0}".format(rtn))
+    return rtn
 
 
 # replay buffer
@@ -105,9 +107,10 @@ def collect_step(environment, policy, buffer):
 
 
 def collect_data(env, policy, buffer, steps):
+    print("[collect_data] start, step_num={0}".format(steps))
     for i in range(steps):
-        print("[collect_data] step: {0}".format(i))
         collect_step(env, policy, buffer)
+    print("[collect_data] complete")
 
 
 print("--- fill replay buffer start")

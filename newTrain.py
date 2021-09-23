@@ -73,7 +73,6 @@ def compute_avg_return(environment, policy, num_episodes=10):
     print("[compute_avg_return] start, episode num = {0}".format(num_episodes))
     total_return = 0.0
     for e in range(num_episodes):
-
         time_step = environment.reset()
         episode_return = 0.0
         i = 0
@@ -84,7 +83,6 @@ def compute_avg_return(environment, policy, num_episodes=10):
             episode_return += time_step.reward
             i = i + 1
         total_return += episode_return
-
     avg_return = total_return / num_episodes
     rtn = avg_return.numpy()[0]
     print("[compute_avg_return] complete, avg_rtn={0}".format(rtn))
@@ -107,10 +105,10 @@ def collect_step(environment, policy, buffer):
 
 
 def collect_data(env, policy, buffer, steps):
-    print("[collect_data] start, step_num={0}".format(steps))
+    #print("[collect_data] start, step_num={0}".format(steps))
     for i in range(steps):
         collect_step(env, policy, buffer)
-    print("[collect_data] complete")
+    #print("[collect_data] complete")
 
 
 print("--- fill replay buffer start")

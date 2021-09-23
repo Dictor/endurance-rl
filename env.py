@@ -29,6 +29,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
         self.connector = airsimConnector(airsimPort, envName)
         self.connector.connect()
         self.connector.reset()
+        self.step_count = 0
 
     def action_spec(self):
         return self._action_spec
@@ -39,6 +40,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
     def _reset(self):
         self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
+        self.step_count = 0
         return ts.restart(np.array(self._state, dtype=np.float))
 
     def _step(self, action):
@@ -49,6 +51,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
             return self.reset()
 
         # Make sure episodes don't go on forever.
+        self.step_count += 1
         if action == 0:
             self.connector.moveForward()
         elif action == 1:
@@ -75,6 +78,10 @@ class EnduranceEnv(py_environment.PyEnvironment):
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: colided")
                 return ts.termination(np.array(self._state, dtype=np.float), -20)
+
+            if self.step_count > 100:
+                print("[EnduranceEnv] termination: step limit over")
+                return ts.termination(np.array(self._state, dtype=np.float), -10)
 
             r = -0.05
             if goalDistance > 30:

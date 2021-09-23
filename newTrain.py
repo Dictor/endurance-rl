@@ -28,7 +28,7 @@ if not os.path.exists("checkpoint"):
 # hyper params
 num_iterations = 20000  # @param {type:"integer"}
 
-initial_collect_steps = 1000  # @param {type:"integer"}
+initial_collect_steps = 10000  # @param {type:"integer"}
 collect_steps_per_iteration = 1  # @param {type:"integer"}
 replay_buffer_max_length = 100000  # @param {type:"integer"}
 
@@ -36,8 +36,8 @@ batch_size = 64  # @param {type:"integer"}
 learning_rate = 1e-3  # @param {type:"number"}
 log_interval = 50  # @param {type:"integer"}
 
-num_eval_episodes = 150  # @param {type:"integer"}
-eval_interval = 1000  # @param {type:"integer"}
+num_eval_episodes = 1  # @param {type:"integer"}
+eval_interval = 150  # @param {type:"integer"}
 
 # environment
 eval_py_env = EnduranceEnv(40000, "eval")

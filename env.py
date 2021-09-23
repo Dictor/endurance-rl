@@ -78,7 +78,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
             if self.connector.isCollided():
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: colided")
-                return ts.termination(np.array(self._state, dtype=np.float), -50)
+                return ts.termination(np.array(self._state, dtype=np.float), -10)
 
             if self.step_count > 100:
                 self._episode_ended = True
@@ -87,7 +87,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
 
             r = -0.05
             if goalDistance > 15:
-                r -= (goalDistance - 15) / 10
+                r -= (goalDistance - 15) / 300
             else:
                 r += (15 - goalDistance)
             #print("[EnduranceEnv] transition: reward={:.3f}".format(r))

@@ -39,6 +39,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
 
     def _reset(self):
         self._state = [0, 0, 0, 0, 0, 0, 0]
+        self.connector.reset()
         self._episode_ended = False
         self.step_count = 0
         return ts.restart(np.array(self._state, dtype=np.float))
@@ -71,22 +72,22 @@ class EnduranceEnv(py_environment.PyEnvironment):
             # found goal
             self._episode_ended = True
             print("[EnduranceEnv] termination: goal reached")
-            return ts.termination(np.array(self._state, dtype=np.float), 20)
+            return ts.termination(np.array(self._state, dtype=np.float), 50)
         else:
             # not found goal
             if self.connector.isCollided():
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: colided")
-                return ts.termination(np.array(self._state, dtype=np.float), -20)
+                return ts.termination(np.array(self._state, dtype=np.float), -50)
 
             if self.step_count > 100:
                 print("[EnduranceEnv] termination: step limit over")
                 return ts.termination(np.array(self._state, dtype=np.float), -10)
 
             r = -0.05
-            if goalDistance > 30:
-                r -= (goalDistance - 30) / 10
+            if goalDistance > 15:
+                r -= (goalDistance - 15) / 10
             else:
-                r += (30 - goalDistance)
-            print("[EnduranceEnv] transition: reward={:.3f}".format(r))
+                r += (15 - goalDistance)
+            #print("[EnduranceEnv] transition: reward={:.3f}".format(r))
             return ts.transition(np.array(self._state, dtype=np.float), reward=r, discount=1)

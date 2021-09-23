@@ -81,6 +81,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
                 return ts.termination(np.array(self._state, dtype=np.float), -50)
 
             if self.step_count > 100:
+                self._episode_ended = True
                 print("[EnduranceEnv] termination: step limit over")
                 return ts.termination(np.array(self._state, dtype=np.float), -10)
 

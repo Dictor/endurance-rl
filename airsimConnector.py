@@ -45,7 +45,7 @@ class airsimConnector():
         pose = airsim.Pose(position, heading)
         self.controlClient.moveByVelocityAsync(0, 0, 0, 0.5).join()
         self.controlClient.simSetVehiclePose(pose, False)
-        time.sleep(3)
+        time.sleep(1)
         self.controlLock.release()
 
     def moveForward(self):
@@ -53,8 +53,8 @@ class airsimConnector():
         yaw = self.addYawAngle(0)
         self.print("move front, yaw={0}".format(yaw))
         yaw = (yaw / 360) * (2 * math.pi)
-        vx = math.cos(yaw) * 2.5
-        vy = math.sin(yaw) * 2.5
+        vx = math.cos(yaw) * 1
+        vy = math.sin(yaw) * 1
         self.controlClient.moveByVelocityAsync(vx, vy, 0, 1).join()
         self.controlLock.release()
 

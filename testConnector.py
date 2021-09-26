@@ -1,6 +1,7 @@
 from airsimConnector import airsimConnector
 
 conn = airsimConnector(int(input("port=")), "eval")
+conn.connect()
 
 while True:
     print("distance: ", conn.getDistance())

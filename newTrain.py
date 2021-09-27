@@ -26,7 +26,7 @@ if not os.path.exists("checkpoint"):
     os.makedirs("checkpoint")
 
 # hyper params
-num_iterations = 1800  # @param {type:"integer"}
+num_iterations = 30000  # @param {type:"integer"}
 
 initial_collect_steps = 10000  # @param {type:"integer"}
 collect_steps_per_iteration = 1  # @param {type:"integer"}

@@ -3,9 +3,15 @@ import math
 import airsim
 import os
 import threading
+from airsim.types import YawMode
 import numpy as np
 from PIL import Image
 import time
+
+
+def clamp(n, minn, maxn):
+    i = max(min(maxn, n), minn)
+    return int(i)
 
 
 class airsimConnector():
@@ -21,12 +27,14 @@ class airsimConnector():
         print("[{0}] {1}".format(self.name, v))
 
     def connect(self):
+        self.print("connect")
         self.controlClient.confirmConnection()
         self.controlClient.enableApiControl(True)
         self.controlClient.armDisarm(True)
         self.sensorClient.confirmConnection()
         self.sensorClient.enableApiControl(True)
         self.sensorClient.takeoffAsync().join()
+        self.print("connect ok")
 
     def takeOff(self):
         self.print("take off")
@@ -55,7 +63,8 @@ class airsimConnector():
         yaw = (yaw / 360) * (2 * math.pi)
         vx = math.cos(yaw) * 1
         vy = math.sin(yaw) * 1
-        self.controlClient.moveByVelocityAsync(vx, vy, 0, 1).join()
+        self.controlClient.moveByVelocityAsync(vx, vy, 0, 3).join()
+        self.controlClient.hoverAsync().join()
         self.controlLock.release()
 
     def turnLeft(self):
@@ -71,14 +80,14 @@ class airsimConnector():
         self.controlLock.release()
 
     def getDistance(self):
-        df = self.sensorClient.getDistanceSensorData(
-            distance_sensor_name="DistanceForward").distance
-        db = self.sensorClient.getDistanceSensorData(
-            distance_sensor_name="DistanceBack").distance
-        dl = self.sensorClient.getDistanceSensorData(
-            distance_sensor_name="DistanceLeft").distance
-        dr = self.sensorClient.getDistanceSensorData(
-            distance_sensor_name="DistanceRight").distance
+        df = clamp(self.sensorClient.getDistanceSensorData(
+            distance_sensor_name="DistanceForward").distance, 0, 10)
+        db = clamp(self.sensorClient.getDistanceSensorData(
+            distance_sensor_name="DistanceBack").distance, 0, 10)
+        dl = clamp(self.sensorClient.getDistanceSensorData(
+            distance_sensor_name="DistanceLeft").distance, 0, 10)
+        dr = clamp(self.sensorClient.getDistanceSensorData(
+            distance_sensor_name="DistanceRight").distance, 0, 10)
         return (df, db, dl, dr)
 
     def getBright(self):
@@ -94,9 +103,9 @@ class airsimConnector():
         grayImg = Image.fromarray(grayArr)
         grayImg.thumbnail([3, 3])
         smallArr = np.array(grayImg)
-        bl = smallArr[1, 0]
-        bc = smallArr[1, 1]
-        br = smallArr[1, 2]
+        bl = clamp(smallArr[1, 0] / 10, 0, 10)
+        bc = clamp(smallArr[1, 1] / 10, 0, 10)
+        br = clamp(smallArr[1, 2] / 10, 0, 10)
         return (bl, bc, br)
 
     def getGoalDistance(self):

@@ -20,10 +20,10 @@ class EnduranceEnv(py_environment.PyEnvironment):
     def __init__(self, airsimPort, envName):
         # action: front, turn left, turn right
         self._action_spec = array_spec.BoundedArraySpec(
-            shape=(), dtype=np.int32, minimum=0, maximum=2, name='action')
+            shape=(), dtype=np.int, minimum=0, maximum=2, name='action')
         # observation: 3 sensors (left, center, right), senser values are divided by 20 levels.
         self._observation_spec = array_spec.BoundedArraySpec(
-            shape=(7, ), dtype=np.float, minimum=0, name='observation')
+            shape=(7, ), dtype=np.int, minimum=0, maximum=10, name='observation')
         self._state = [0, 0, 0, 0, 0, 0, 0]
         self._episode_ended = False
         self.connector = airsimConnector(airsimPort, envName)
@@ -42,7 +42,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
         self.connector.reset()
         self._episode_ended = False
         self.step_count = 0
-        return ts.restart(np.array(self._state, dtype=np.float))
+        return ts.restart(np.array(self._state, dtype=np.int))
 
     def _step(self, action):
         if self._episode_ended:
@@ -65,25 +65,25 @@ class EnduranceEnv(py_environment.PyEnvironment):
         bright = self.connector.getBright()
         distance = self.connector.getDistance()
         goalDistance = self.connector.getGoalDistance()
-        self._state = [(bright[0] / 255) * 600, (bright[1] / 255) * 600,
-                       (bright[2] / 255) * 600, distance[0], distance[1], distance[2], distance[3]]
+        self._state = [bright[0], bright[1], bright[2],
+                       distance[0], distance[1], distance[2], distance[3]]
 
         if goalDistance < 8:
             # found goal
             self._episode_ended = True
             print("[EnduranceEnv] termination: goal reached")
-            return ts.termination(np.array(self._state, dtype=np.float), 50)
+            return ts.termination(np.array(self._state, dtype=np.int), 50)
         else:
             # not found goal
             if self.connector.isCollided():
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: colided")
-                return ts.termination(np.array(self._state, dtype=np.float), -10)
+                return ts.termination(np.array(self._state, dtype=np.int), -10)
 
-            if self.step_count > 100:
+            if self.step_count > 200:
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: step limit over")
-                return ts.termination(np.array(self._state, dtype=np.float), -10)
+                return ts.termination(np.array(self._state, dtype=np.int), -10)
 
             r = -0.05
             if goalDistance > 15:
@@ -91,4 +91,4 @@ class EnduranceEnv(py_environment.PyEnvironment):
             else:
                 r += (15 - goalDistance)
             #print("[EnduranceEnv] transition: reward={:.3f}".format(r))
-            return ts.transition(np.array(self._state, dtype=np.float), reward=r, discount=1)
+            return ts.transition(np.array(self._state, dtype=np.int), reward=r, discount=1)

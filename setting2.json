@@ -3,7 +3,7 @@
   "SettingsVersion": 1.2,
   "ApiServerPort": 40000,
   "SimMode": "Multirotor",
-  "ClockSpeed": 10,
+  "ClockSpeed": 50,
   "Vehicles": {
     "SimpleFlight": {
       "VehicleType": "SimpleFlight",

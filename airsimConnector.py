@@ -48,7 +48,7 @@ class airsimConnector():
     def moveOrigin(self):
         self.controlLock.acquire()
         self.print("move origin")
-        position = airsim.Vector3r(0, 0, -8)
+        position = airsim.Vector3r(30, 5, -8)
         heading = airsim.utils.to_quaternion(0, 0, 0)
         pose = airsim.Pose(position, heading)
         self.controlClient.moveByVelocityAsync(0, 0, 0, 0.5).join()

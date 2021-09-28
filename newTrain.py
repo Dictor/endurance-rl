@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from datetime import datetime
 
 import tensorflow as tf
 
@@ -142,30 +143,34 @@ avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
 returns = [avg_return]
 
 for i in range(num_iterations):
-    #print("[training iteration]: {0}".format(i))
-    # Collect a few steps using collect_policy and save to the replay buffer.
-    collect_data(train_env, agent.collect_policy,
-                 replay_buffer, collect_steps_per_iteration)
+    try:
+        #print("[training iteration]: {0}".format(i))
+        # Collect a few steps using collect_policy and save to the replay buffer.
+        collect_data(train_env, agent.collect_policy,
+                     replay_buffer, collect_steps_per_iteration)
 
-    # Sample a batch of data from the buffer and update the agent's network.
-    experience, unused_info = next(iterator)
-    train_loss = agent.train(experience).loss
+        # Sample a batch of data from the buffer and update the agent's network.
+        experience, unused_info = next(iterator)
+        train_loss = agent.train(experience).loss
 
-    step = agent.train_step_counter.numpy()
+        step = agent.train_step_counter.numpy()
 
-    if step % log_interval == 0:
-        print('step = {0}: loss = {1}'.format(step, train_loss))
+        if step % log_interval == 0:
+            print('step = {0}: loss = {1}'.format(step, train_loss))
 
-    if step % eval_interval == 0:
-        avg_return = compute_avg_return(
-            eval_env, agent.policy, num_eval_episodes)
-        print('step = {0}: Average Return = {1}'.format(step, avg_return))
-        returns.append(avg_return)
+        if step % eval_interval == 0:
+            avg_return = compute_avg_return(
+                eval_env, agent.policy, num_eval_episodes)
+            print('step = {0}: Average Return = {1}'.format(step, avg_return))
+            returns.append(avg_return)
+    except KeyboardInterrupt:
+        print("key int! exit loop")
+        break
 
-iterations = range(0, num_iterations + 1, eval_interval)
+iterations = range(0, eval_interval*len(returns), eval_interval)
 plt.plot(iterations, returns)
 plt.ylabel('Average Return')
 plt.xlabel('Iterations')
 plt.ylim(top=250)
+plt.savefig("graph{0}.jpg".format(datetime.now().strftime("%y%d%m-%H_%M_%S")))
 plt.show()
-plt.savefig("graph.jpg")

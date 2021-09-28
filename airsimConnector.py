@@ -70,13 +70,13 @@ class airsimConnector():
     def turnLeft(self):
         self.controlLock.acquire()
         self.print("turn left")
-        self.controlClient.rotateToYawAsync(self.addYawAngle(-15)).join()
+        self.controlClient.rotateToYawAsync(self.addYawAngle(-45)).join()
         self.controlLock.release()
 
     def turnRight(self):
         self.controlLock.acquire()
         self.print("turn right")
-        self.controlClient.rotateToYawAsync(self.addYawAngle(15)).join()
+        self.controlClient.rotateToYawAsync(self.addYawAngle(45)).join()
         self.controlLock.release()
 
     def getDistance(self):

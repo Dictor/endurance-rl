@@ -35,10 +35,10 @@ replay_buffer_max_length = 100000  # @param {type:"integer"}
 
 batch_size = 128  # @param {type:"integer"}
 learning_rate = 1e-3  # @param {type:"number"}
-log_interval = 50  # @param {type:"integer"}
+log_interval = 100  # @param {type:"integer"}
 
-num_eval_episodes = 1  # @param {type:"integer"}
-eval_interval = 150  # @param {type:"integer"}
+num_eval_episodes = 5  # @param {type:"integer"}
+eval_interval = 500  # @param {type:"integer"}
 
 # environment
 eval_py_env = EnduranceEnv(40000, "eval")

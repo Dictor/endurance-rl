@@ -2,3 +2,5 @@ WindowsNoEditor/*
 checkpoint/*
 graph.jpg
 __pycache__
+*.zip
+*.jpg

@@ -91,4 +91,4 @@ class EnduranceEnv(py_environment.PyEnvironment):
             else:
                 r += (15 - goalDistance) / 100
             #print("[EnduranceEnv] transition: reward={:.3f}".format(r))
-            return ts.transition(np.array(self._state, dtype=np.int), reward=r, discount=1)
+            return ts.transition(np.array(self._state, dtype=np.int), reward=r, discount=0.95)

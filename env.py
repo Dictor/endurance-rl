@@ -80,7 +80,7 @@ class EnduranceEnv(py_environment.PyEnvironment):
                 print("[EnduranceEnv] termination: colided")
                 return ts.termination(np.array(self._state, dtype=np.int), -10)
 
-            if self.step_count > 250:
+            if self.step_count > 100:
                 self._episode_ended = True
                 print("[EnduranceEnv] termination: step limit over")
                 return ts.termination(np.array(self._state, dtype=np.int), -3)

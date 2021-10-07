@@ -24,7 +24,7 @@ if not os.path.exists("checkpoint"):
     os.makedirs("checkpoint")
 
 # hyper params
-num_iterations = 10000  # @param {type:"integer"}
+num_iterations = 200  # @param {type:"integer"}
 
 initial_collect_steps = 10000  # @param {type:"integer"}
 collect_steps_per_iteration = 4  # @param {type:"integer"}
@@ -74,16 +74,16 @@ replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
 
 # fill replay buffer
 print(">>> fill replay buffer start")
-if os.path.exists("checkpoint/checkpoint"):
+if os.path.exists("replay_buffer/checkpoint"):
     print("checkpoint exist! open existing replay buffer")
     cp = tf.train.Checkpoint(rb=replay_buffer)
-    cp.restore("checkpoint/replay_buffer-1")
+    cp.restore("replay_buffer/replay_buffer-1")
     replay_buffer.get_next()
 else:
     collect_data(train_env, random_policy,
                  replay_buffer, initial_collect_steps)
     cp = tf.train.Checkpoint(rb=replay_buffer)
-    cp.save("checkpoint/replay_buffer")
+    cp.save("replay_buffer/replay_buffer")
 print(">>> fill replay buffer complete")
 
 

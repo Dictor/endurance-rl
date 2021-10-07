@@ -1,176 +1,157 @@
+import matplotlib.pyplot as plt
 import os
-import sys
-import random
-import numpy as np
-from collections import deque
+from datetime import datetime
+
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.initializers import RandomUniform
-from env import EnduranceEnv
+
+from tf_agents.agents.dqn import dqn_agent
 from tf_agents.environments import tf_py_environment
-import pylab
+from tf_agents.policies import random_tf_policy
+from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
-# 상태가 입력, 큐함수가 출력인 인공신경망 생성
+from tf_agents.specs import tensor_spec
+from tf_agents.utils import common
+from tf_agents.networks import q_network
 
+from env import EnduranceEnv
 
-class DQN(tf.keras.Model):
-    def __init__(self, action_size):
-        super(DQN, self).__init__()
-        self.fc1 = Dense(24, activation='relu')
-        self.fc2 = Dense(24, activation='relu')
-        self.fc_out = Dense(action_size,
-                            kernel_initializer=RandomUniform(-1e-3, 1e-3))
+from trainUtil import *
 
-    def call(self, x):
-        x = self.fc1(x)
-        x = self.fc2(x)
-        q = self.fc_out(x)
-        return q
+# prepare path
+if not os.path.exists("replay_buffer"):
+    os.makedirs("replay_buffer")
+if not os.path.exists("checkpoint"):
+    os.makedirs("checkpoint")
 
+# hyper params
+num_iterations = 10000  # @param {type:"integer"}
 
-# 카트폴 예제에서의 DQN 에이전트
-class DQNAgent:
-    def __init__(self, state_size, action_size):
-        self.render = False
+initial_collect_steps = 10000  # @param {type:"integer"}
+collect_steps_per_iteration = 4  # @param {type:"integer"}
+replay_buffer_max_length = 100000  # @param {type:"integer"}
 
-        # 상태와 행동의 크기 정의
-        self.state_size = state_size
-        self.action_size = action_size
+batch_size = 16  # @param {type:"integer"}
+learning_rate = 0.00001  # @param {type:"number"}
+log_interval = 100  # @param {type:"integer"}
 
-        # DQN 하이퍼파라미터
-        self.discount_factor = 0.99
-        self.learning_rate = 0.001
-        self.epsilon = 1.0
-        self.epsilon_decay = 0.999
-        self.epsilon_min = 0.01
-        self.batch_size = 64
-        self.train_start = 1000
+num_eval_episodes = 5  # @param {type:"integer"}
+eval_interval = 500  # @param {type:"integer"}
 
-        # 리플레이 메모리, 최대 크기 2000
-        self.memory = deque(maxlen=2000)
+# environment
+eval_py_env = EnduranceEnv(40000, "eval")
+train_py_env = EnduranceEnv(40001, "train")
+eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
+train_env = tf_py_environment.TFPyEnvironment(train_py_env)
 
-        # 모델과 타깃 모델 생성
-        self.model = DQN(action_size)
-        self.target_model = DQN(action_size)
-        self.optimizer = Adam(lr=self.learning_rate)
+# q network
+fc_layer_params = (100, 50)
+action_tensor_spec = tensor_spec.from_spec(eval_env.action_spec())
+q_net = q_network.QNetwork(
+    train_env.observation_spec(),
+    train_env.action_spec(),
+    fc_layer_params=fc_layer_params
+)
 
-        # 타깃 모델 초기화
-        self.update_target_model()
+# agent
+optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+train_step_counter = tf.Variable(0)
+agent = dqn_agent.DqnAgent(
+    train_env.time_step_spec(),
+    train_env.action_spec(),
+    q_network=q_net,
+    optimizer=optimizer,
+    td_errors_loss_fn=common.element_wise_squared_loss,
+    train_step_counter=train_step_counter)
+agent.initialize()
+random_policy = random_tf_policy.RandomTFPolicy(train_env.time_step_spec(),
+                                                train_env.action_spec())
 
-    # 타깃 모델을 모델의 가중치로 업데이트
-    def update_target_model(self):
-        self.target_model.set_weights(self.model.get_weights())
+# replay buffer
+replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+    data_spec=agent.collect_data_spec,
+    batch_size=train_env.batch_size,
+    max_length=replay_buffer_max_length)
 
-    # 입실론 탐욕 정책으로 행동 선택
-    def get_action(self, state):
-        if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
-        else:
-            q_value = self.model(state)
-            return np.argmax(q_value[0])
-
-    # 샘플 <s, a, r, s'>을 리플레이 메모리에 저장
-    def append_sample(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
-
-    # 리플레이 메모리에서 무작위로 추출한 배치로 모델 학습
-    def train_model(self):
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-
-        # 메모리에서 배치 크기만큼 무작위로 샘플 추출
-        mini_batch = random.sample(self.memory, self.batch_size)
-
-        states = np.array([sample[0][0] for sample in mini_batch])
-        actions = np.array([sample[1] for sample in mini_batch])
-        rewards = np.array([sample[2] for sample in mini_batch])
-        next_states = np.array([sample[3][0] for sample in mini_batch])
-        dones = np.array([sample[4] for sample in mini_batch])
-
-        # 학습 파라메터
-        model_params = self.model.trainable_variables
-        with tf.GradientTape() as tape:
-            # 현재 상태에 대한 모델의 큐함수
-            predicts = self.model(states)
-            one_hot_action = tf.one_hot(actions, self.action_size)
-            predicts = tf.reduce_sum(one_hot_action * predicts, axis=1)
-
-            # 다음 상태에 대한 타깃 모델의 큐함수
-            target_predicts = self.target_model(next_states)
-            target_predicts = tf.stop_gradient(target_predicts)
-
-            # 벨만 최적 방정식을 이용한 업데이트 타깃
-            max_q = np.amax(target_predicts, axis=-1)
-            targets = rewards + (1 - dones) * self.discount_factor * max_q
-            loss = tf.reduce_mean(tf.square(targets - predicts))
-
-        # 오류함수를 줄이는 방향으로 모델 업데이트
-        grads = tape.gradient(loss, model_params)
-        self.optimizer.apply_gradients(zip(grads, model_params))
+# fill replay buffer
+print(">>> fill replay buffer start")
+if os.path.exists("checkpoint/checkpoint"):
+    print("checkpoint exist! open existing replay buffer")
+    cp = tf.train.Checkpoint(rb=replay_buffer)
+    cp.restore("checkpoint/replay_buffer-1")
+    replay_buffer.get_next()
+else:
+    collect_data(train_env, random_policy,
+                 replay_buffer, initial_collect_steps)
+    cp = tf.train.Checkpoint(rb=replay_buffer)
+    cp.save("checkpoint/replay_buffer")
+print(">>> fill replay buffer complete")
 
 
-if __name__ == "__main__":
-    # CartPole-v1 환경, 최대 타임스텝 수가 500
-    env = tf_py_environment.TFPyEnvironment(EnduranceEnv())
-    state_size = 7
-    action_size = 3
+# global step
+global_step = tf.compat.v1.train.get_or_create_global_step()
 
-    # DQN 에이전트 생성
-    agent = DQNAgent(state_size, action_size)
+# checkpointer
+train_checkpointer = common.Checkpointer(
+    ckpt_dir="checkpoint",
+    max_to_keep=1,
+    agent=agent,
+    policy=agent.policy,
+    replay_buffer=replay_buffer,
+    global_step=global_step
+)
 
-    scores, episodes = [], []
-    score_avg = 0
+train_checkpointer.initialize_or_restore()
+global_step = tf.compat.v1.train.get_global_step()
 
-    num_episode = 200
-    for e in range(num_episode):
-        done = False
-        score = 0
-        # env 초기화
-        state = env.reset()
-        # print(state)
-        state = np.reshape(state, [1, state_size])
+# dataset
+dataset = replay_buffer.as_dataset(
+    num_parallel_calls=3,
+    sample_batch_size=batch_size,
+    num_steps=2).prefetch(3)
+iterator = iter(dataset)
 
-        while not done:
-            if agent.render:
-                env.render()
+# (Optional) Optimize by wrapping some of the code in a graph using TF function.
+agent.train = common.function(agent.train)
 
-            # 현재 상태로 행동을 선택
-            action = agent.get_action(state)
-            # 선택한 행동으로 환경에서 한 타임스텝 진행
-            next_state, reward, done, info = env.step(action)
-            next_state = np.reshape(next_state, [1, state_size])
+# Reset the train step
+agent.train_step_counter.assign(0)
 
-            # 타임스텝마다 보상 0.1, 에피소드가 중간에 끝나면 -1 보상
-            score += reward
-            #reward = 0.1 if not done or score == 500 else -1
+# Evaluate the agent's policy once before training.
+avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
+returns = [avg_return]
 
-            # 리플레이 메모리에 샘플 <s, a, r, s'> 저장
-            agent.append_sample(state, action, reward, next_state, done)
-            # 매 타임스텝마다 학습
-            if len(agent.memory) >= agent.train_start:
-                agent.train_model()
+for i in range(num_iterations):
+    try:
+        #print("[training iteration]: {0}".format(i))
+        # Collect a few steps using collect_policy and save to the replay buffer.
+        collect_data(train_env, agent.collect_policy,
+                     replay_buffer, collect_steps_per_iteration)
 
-            state = next_state
+        # Sample a batch of data from the buffer and update the agent's network.
+        experience, unused_info = next(iterator)
+        train_loss = agent.train(experience).loss
 
-            if done:
-                # 각 에피소드마다 타깃 모델을 모델의 가중치로 업데이트
-                agent.update_target_model()
-                # 에피소드마다 학습 결과 출력
-                score_avg = 0.9 * score_avg + 0.1 * score if score_avg != 0 else score
-                print("\n\nepisode: {:3d} | score avg: {:f} | memory length: {:4d} | epsilon: {:.4f}".format(
-                    e, score_avg.numpy()[0], len(agent.memory), agent.epsilon))
+        step = agent.train_step_counter.numpy()
 
-                # 에피소드마다 학습 결과 그래프로 저장
-                scores.append(score_avg)
-                episodes.append(e)
-                pylab.plot(episodes, scores, 'b')
-                pylab.xlabel("episode")
-                pylab.ylabel("average score")
-                pylab.savefig("./graph.png")
+        if step % log_interval == 0:
+            print('step = {0}: loss = {1}'.format(step, train_loss))
 
-                # 이동 평균이 400 이상일 때 종료
-                if score_avg > 1:
-                    agent.model.save_weights(
-                        "./save_model/model", save_format="tf")
-                    sys.exit()
+        if step % eval_interval == 0:
+            avg_return = compute_avg_return(
+                eval_env, agent.policy, num_eval_episodes)
+            print('step = {0}: Average Return = {1}'.format(step, avg_return))
+            returns.append(avg_return)
+    except KeyboardInterrupt:
+        print("key int! exit loop")
+        break
+
+# save checkpoint
+train_checkpointer.save(global_step)
+
+iterations = range(0, eval_interval*len(returns), eval_interval)
+plt.plot(iterations, returns)
+plt.ylabel('Average Return')
+plt.xlabel('Iterations')
+plt.ylim(top=250)
+plt.savefig("graph{0}.jpg".format(datetime.now().strftime("%y%d%m-%H_%M_%S")))
+plt.show()

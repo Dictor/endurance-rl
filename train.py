@@ -18,17 +18,16 @@ from env import EnduranceEnv
 from trainUtil import *
 
 # prepare path
-if not os.path.exists("replay_buffer"):
-    os.makedirs("replay_buffer")
 if not os.path.exists("checkpoint"):
     os.makedirs("checkpoint")
+has_checkpoint = os.path.exists("checkpoint/checkpoint")
 
 # hyper params
-num_iterations = 200  # @param {type:"integer"}
+num_iterations = 10000  # @param {type:"integer"}
 
 initial_collect_steps = 10000  # @param {type:"integer"}
 collect_steps_per_iteration = 4  # @param {type:"integer"}
-replay_buffer_max_length = 100000  # @param {type:"integer"}
+replay_buffer_max_length = 10000  # @param {type:"integer"}
 
 batch_size = 16  # @param {type:"integer"}
 learning_rate = 0.00001  # @param {type:"number"}
@@ -72,21 +71,11 @@ replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
     batch_size=train_env.batch_size,
     max_length=replay_buffer_max_length)
 
-'''
-# fill replay buffer
-print(">>> fill replay buffer start")
-if os.path.exists("replay_buffer/checkpoint"):
-    print("checkpoint exist! open existing replay buffer")
-    cp = tf.train.Checkpoint(rb=replay_buffer)
-    cp.restore("replay_buffer/replay_buffer-1")
-    replay_buffer.get_next()
-else:
+
+if not has_checkpoint:
+    print("no existing checkpoint! create replay buffer.")
     collect_data(train_env, random_policy,
                  replay_buffer, initial_collect_steps)
-    cp = tf.train.Checkpoint(rb=replay_buffer)
-    cp.save("replay_buffer/replay_buffer")
-print(">>> fill replay buffer complete")
-'''
 
 # train checkpointer
 train_checkpointer = common.Checkpointer(

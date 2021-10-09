@@ -4,3 +4,6 @@ graph.jpg
 __pycache__
 *.zip
 *.jpg
+ckpt*
+checkpoint
+replay_buffer

@@ -1,76 +1,71 @@
-import sys
-import gym
-import pylab
-import random
-import numpy as np
-from collections import deque
+
+import os
+
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.initializers import RandomUniform
 
+from tf_agents.agents.dqn import dqn_agent
+from tf_agents.environments import tf_py_environment
+from tf_agents.policies import random_tf_policy
 
-# 상태가 입력, 큐함수가 출력인 인공신경망 생성
-class DQN(tf.keras.Model):
-    def __init__(self, action_size):
-        super(DQN, self).__init__()
-        self.fc1 = Dense(24, activation='relu')
-        self.fc2 = Dense(24, activation='relu')
-        self.fc_out = Dense(action_size,
-                            kernel_initializer=RandomUniform(-1e-3, 1e-3))
+from tf_agents.specs import tensor_spec
+from tf_agents.utils import common
+from tf_agents.networks import q_network
 
-    def call(self, x):
-        x = self.fc1(x)
-        x = self.fc2(x)
-        q = self.fc_out(x)
-        return q
+from env import EnduranceEnv
 
+from trainUtil import *
 
-# 카트폴 예제에서의 DQN 에이전트
-class DQNAgent:
-    def __init__(self, state_size, action_size):
-        # 상태와 행동의 크기 정의
-        self.state_size = state_size
-        self.action_size = action_size
+# hyper parameter
+learning_rate = 0.00001  # @param {type:"number"}
 
-        # 모델과 타깃 모델 생성
-        self.model = DQN(action_size)
-        self.model.load_weights("./save_model/trained/model")
+# prepare path
+if (not os.path.exists("checkpoint")):
+    print("cannot found checkpoint directory!")
+    exit
 
-    # 입실론 탐욕 정책으로 행동 선택
-    def get_action(self, state):
-        q_value = self.model(state)
-        return np.argmax(q_value[0])
+# environment
+eval_py_env = EnduranceEnv(40000, "eval")
+eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
 
+# q network
+fc_layer_params = (100, 50)
+action_tensor_spec = tensor_spec.from_spec(eval_env.action_spec())
+q_net = q_network.QNetwork(
+    eval_env.observation_spec(),
+    eval_env.action_spec(),
+    fc_layer_params=fc_layer_params
+)
 
-if __name__ == "__main__":
-    # CartPole-v1 환경, 최대 타임스텝 수가 500
-    env = gym.make('CartPole-v1')
-    state_size = env.observation_space.shape[0]
-    action_size = env.action_space.n
+# agent
+optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+train_step_counter = tf.Variable(0)
+agent = dqn_agent.DqnAgent(
+    eval_env.time_step_spec(),
+    eval_env.action_spec(),
+    q_network=q_net,
+    optimizer=optimizer,
+    td_errors_loss_fn=common.element_wise_squared_loss,
+    train_step_counter=train_step_counter)
+agent.initialize()
+random_policy = random_tf_policy.RandomTFPolicy(eval_env.time_step_spec(),
+                                                eval_env.action_spec())
 
-    # DQN 에이전트 생성
-    agent = DQNAgent(state_size, action_size)
+# global step
+global_step = tf.compat.v1.train.get_or_create_global_step()
 
-    num_episode = 10
-    for e in range(num_episode):
-        done = False
-        score = 0
-        # env 초기화
-        state = env.reset()
-        state = np.reshape(state, [1, state_size])
+# checkpointer
+train_checkpointer = common.Checkpointer(
+    ckpt_dir="checkpoint",
+    max_to_keep=1,
+    agent=agent,
+    policy=agent.policy,
+    global_step=global_step
+)
 
-        while not done:
-            env.render()
-
-            # 현재 상태로 행동을 선택
-            action = agent.get_action(state)
-            # 선택한 행동으로 환경에서 한 타임스텝 진행
-            next_state, reward, done, info = env.step(action)
-            next_state = np.reshape(next_state, [1, state_size])
-
-            score += reward
-            state = next_state
-
-            if done:
-                # 에피소드마다 학습 결과 출력
-                print("episode: {:3d} | score: {:.3f} ".format(e, score))
+train_checkpointer.initialize_or_restore()
+global_step = tf.compat.v1.train.get_global_step()
+print("global step : {0}".format(global_step.numpy()))
+print("policy: {0}".format(agent.policy))
+# Evaluate the agent's policy once before training.
+avg_return = compute_avg_return(eval_env, agent.policy, 3)
+print("{0} episode avg rtn : {1}".format(3, avg_return))

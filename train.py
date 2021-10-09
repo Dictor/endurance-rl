@@ -53,15 +53,15 @@ q_net = q_network.QNetwork(
 )
 
 # agent
+global_step = tf.compat.v1.train.get_or_create_global_step()
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-train_step_counter = tf.Variable(0)
 agent = dqn_agent.DqnAgent(
     train_env.time_step_spec(),
     train_env.action_spec(),
     q_network=q_net,
     optimizer=optimizer,
     td_errors_loss_fn=common.element_wise_squared_loss,
-    train_step_counter=train_step_counter)
+    train_step_counter=global_step)
 agent.initialize()
 random_policy = random_tf_policy.RandomTFPolicy(train_env.time_step_spec(),
                                                 train_env.action_spec())
@@ -86,11 +86,7 @@ else:
     cp.save("replay_buffer/replay_buffer")
 print(">>> fill replay buffer complete")
 
-
-# global step
-global_step = tf.compat.v1.train.get_or_create_global_step()
-
-# checkpointer
+# train checkpointer
 train_checkpointer = common.Checkpointer(
     ckpt_dir="checkpoint",
     max_to_keep=1,
@@ -122,7 +118,7 @@ returns = [avg_return]
 
 for i in range(num_iterations):
     try:
-        #print("[training iteration]: {0}".format(i))
+        # print("[training iteration]: {0}".format(i))
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_data(train_env, agent.collect_policy,
                      replay_buffer, collect_steps_per_iteration)
@@ -145,7 +141,7 @@ for i in range(num_iterations):
         print("key int! exit loop")
         break
 
-# save checkpoint
+# save agent
 train_checkpointer.save(global_step)
 
 iterations = range(0, eval_interval*len(returns), eval_interval)

@@ -72,6 +72,7 @@ replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
     batch_size=train_env.batch_size,
     max_length=replay_buffer_max_length)
 
+'''
 # fill replay buffer
 print(">>> fill replay buffer start")
 if os.path.exists("replay_buffer/checkpoint"):
@@ -85,6 +86,7 @@ else:
     cp = tf.train.Checkpoint(rb=replay_buffer)
     cp.save("replay_buffer/replay_buffer")
 print(">>> fill replay buffer complete")
+'''
 
 # train checkpointer
 train_checkpointer = common.Checkpointer(

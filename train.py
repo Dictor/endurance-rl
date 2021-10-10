@@ -107,30 +107,41 @@ agent.train_step_counter.assign(0)
 avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
 returns = [avg_return]
 
-for i in range(num_iterations):
-    try:
-        # print("[training iteration]: {0}".format(i))
-        # Collect a few steps using collect_policy and save to the replay buffer.
-        collect_data(train_env, agent.collect_policy,
-                     replay_buffer, collect_steps_per_iteration)
+origins = [
+    (30, 50, -7),
+    (30, 5, -8),
+    (0, 5, -8),
+    (-20, 50, -8),
+    (-30, 25, -8)]
 
-        # Sample a batch of data from the buffer and update the agent's network.
-        experience, unused_info = next(iterator)
-        train_loss = agent.train(experience).loss
+for m in range(len(origins)):
+    print(">>> start origin {0} = {1}".format(m, origins[m]))
+    train_py_env.connector().setOrigin(origins[0], origins[1], origins[2])
+    for i in range(num_iterations):
+        try:
+            # print("[training iteration]: {0}".format(i))
+            # Collect a few steps using collect_policy and save to the replay buffer.
+            collect_data(train_env, agent.collect_policy,
+                         replay_buffer, collect_steps_per_iteration)
 
-        step = agent.train_step_counter.numpy()
+            # Sample a batch of data from the buffer and update the agent's network.
+            experience, unused_info = next(iterator)
+            train_loss = agent.train(experience).loss
 
-        if step % log_interval == 0:
-            print('step = {0}: loss = {1}'.format(step, train_loss))
+            step = agent.train_step_counter.numpy()
 
-        if step % eval_interval == 0:
-            avg_return = compute_avg_return(
-                eval_env, agent.policy, num_eval_episodes)
-            print('step = {0}: Average Return = {1}'.format(step, avg_return))
-            returns.append(avg_return)
-    except KeyboardInterrupt:
-        print("key int! exit loop")
-        break
+            if step % log_interval == 0:
+                print('step = {0}: loss = {1}'.format(step, train_loss))
+
+            if step % eval_interval == 0:
+                avg_return = compute_avg_return(
+                    eval_env, agent.policy, num_eval_episodes)
+                print('step = {0}: Average Return = {1}'.format(
+                    step, avg_return))
+                returns.append(avg_return)
+        except KeyboardInterrupt:
+            print("key int! exit loop")
+            break
 
 # save agent
 train_checkpointer.save(global_step)

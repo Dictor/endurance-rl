@@ -132,7 +132,7 @@ for m in range(len(origins)):
             step = agent.train_step_counter.numpy()
 
             if step % log_interval == 0:
-                print('origin = {0} step = {0}: loss = {1}'.format(
+                print('origin = {0} step = {1}: loss = {2}'.format(
                     m, step, train_loss))
 
             if step % eval_interval == 0:

@@ -116,7 +116,8 @@ origins = [
 
 for m in range(len(origins)):
     print(">>> start origin {0} = {1}".format(m, origins[m]))
-    train_py_env.connector.setOrigin(origins[0], origins[1], origins[2])
+    train_py_env.connector.setOrigin(
+        origins[m][0], origins[m][1], origins[m][2])
     for i in range(num_iterations):
         try:
             # print("[training iteration]: {0}".format(i))

@@ -31,9 +31,6 @@ class EnduranceEnv(py_environment.PyEnvironment):
         self.connector.reset()
         self.step_count = 0
 
-    def connector(self):
-        return self.connector
-
     def action_spec(self):
         return self._action_spec
 

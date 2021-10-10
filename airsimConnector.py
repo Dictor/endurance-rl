@@ -1,3 +1,4 @@
+
 # ready to run example: PythonClient/multirotor/hello_drone.py
 import math
 import airsim
@@ -21,6 +22,7 @@ class airsimConnector():
         self.sensorClient = airsim.MultirotorClient(port=port)
         self.name = name
         self.yaw = 0
+        self.origin = (30, 5, -8)
 
     def print(self, v):
         return
@@ -45,16 +47,22 @@ class airsimConnector():
         self.yaw = 0
         self.moveOrigin()
 
+    def setOrigin(self, x, y, z):
+        self.origin = (x, y, z)
+
     def moveOrigin(self):
         self.controlLock.acquire()
         self.print("move origin")
-        position = airsim.Vector3r(30, 5, -8)
+        self.moveTo(self.origin[0], self.origin[1], self.origin[2])
+        time.sleep(0.2)
+        self.controlLock.release()
+
+    def moveTo(self, x, y, z):
+        position = airsim.Vector3r(x, y, z)
         heading = airsim.utils.to_quaternion(0, 0, 0)
         pose = airsim.Pose(position, heading)
         self.controlClient.moveByVelocityAsync(0, 0, 0, 0.5).join()
-        self.controlClient.simSetVehiclePose(pose, False)
-        time.sleep(1)
-        self.controlLock.release()
+        self.controlClient.simSetVehiclePose(pose, True)
 
     def moveForward(self):
         self.controlLock.acquire()
@@ -108,8 +116,11 @@ class airsimConnector():
         br = clamp(smallArr[1, 2] / 10, 0, 10)
         return (bl, bc, br)
 
+    def getPosition(self):
+        return self.sensorClient.simGetVehiclePose().position
+
     def getGoalDistance(self):
-        vpos = self.sensorClient.simGetVehiclePose().position
+        vpos = self.getPosition()
         vpos = [vpos.x_val, vpos.y_val, vpos.z_val]
         self.print("vpos:{0}".format(vpos))
         gpos = [60, 30, 0]

@@ -14,7 +14,7 @@ from tf_agents.utils import common
 from tf_agents.networks import q_network
 
 from env import EnduranceEnv
-
+from constant import MapOrigin
 from trainUtil import *
 
 # prepare path
@@ -107,13 +107,7 @@ agent.train_step_counter.assign(0)
 avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
 returns = [avg_return]
 
-origins = [
-    (30, 50, -7),
-    (30, 5, -8),
-    (0, 5, -8),
-    (-20, 50, -8),
-    (-30, 25, -8)]
-
+origins = MapOrigin["simple"]
 for m in range(len(origins)):
     print(">>> start origin {0} = {1}".format(m, origins[m]))
     train_py_env.connector.setOrigin(

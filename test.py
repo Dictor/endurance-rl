@@ -12,7 +12,7 @@ from tf_agents.utils import common
 from tf_agents.networks import q_network
 
 from env import EnduranceEnv
-
+from constant import MapOrigin
 from trainUtil import *
 
 # hyper parameter
@@ -67,5 +67,11 @@ global_step = tf.compat.v1.train.get_global_step()
 print("global step : {0}".format(global_step.numpy()))
 print("policy: {0}".format(agent.policy))
 # Evaluate the agent's policy once before training.
-avg_return = compute_avg_return(eval_env, agent.policy, 3)
+
+origins = MapOrigin["simple"]
+for m in range(len(origins)):
+    print(">>> start origin {0} = {1}".format(m, origins[m]))
+    eval_py_env.connector.setOrigin(
+        origins[m][0], origins[m][1], origins[m][2])
+    avg_return = compute_avg_return(eval_env, agent.policy, 3)
 print("{0} episode avg rtn : {1}".format(3, avg_return))

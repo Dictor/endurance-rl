@@ -28,7 +28,7 @@ eval_py_env = EnduranceEnv(40000, "eval")
 eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
 
 # q network
-fc_layer_params = (100, 50)
+fc_layer_params = (100, 2)
 action_tensor_spec = tensor_spec.from_spec(eval_env.action_spec())
 q_net = q_network.QNetwork(
     eval_env.observation_spec(),

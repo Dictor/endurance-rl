@@ -8,6 +8,7 @@ from tf_agents.agents.dqn import dqn_agent
 from tf_agents.environments import tf_py_environment
 from tf_agents.policies import random_tf_policy
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
+from tf_agents.policies import policy_saver
 
 from tf_agents.specs import tensor_spec
 from tf_agents.utils import common
@@ -23,7 +24,7 @@ if not os.path.exists("checkpoint"):
 has_checkpoint = os.path.exists("checkpoint/checkpoint")
 
 # hyper params
-num_iterations = 10000  # @param {type:"integer"}
+num_iterations = 2000  # @param {type:"integer"}
 
 initial_collect_steps = 10000  # @param {type:"integer"}
 collect_steps_per_iteration = 4  # @param {type:"integer"}
@@ -34,7 +35,7 @@ learning_rate = 0.00001  # @param {type:"number"}
 log_interval = 100  # @param {type:"integer"}
 
 num_eval_episodes = 5  # @param {type:"integer"}
-eval_interval = 500  # @param {type:"integer"}
+eval_interval = 300  # @param {type:"integer"}
 
 # environment
 eval_py_env = EnduranceEnv(40000, "eval")
@@ -43,7 +44,7 @@ eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
 train_env = tf_py_environment.TFPyEnvironment(train_py_env)
 
 # q network
-fc_layer_params = (100, 50)
+fc_layer_params = (30, 2)
 action_tensor_spec = tensor_spec.from_spec(eval_env.action_spec())
 q_net = q_network.QNetwork(
     train_env.observation_spec(),
@@ -89,6 +90,10 @@ train_checkpointer = common.Checkpointer(
 
 train_checkpointer.initialize_or_restore()
 global_step = tf.compat.v1.train.get_global_step()
+
+policy_dir = os.path.join('policy')
+tf_policy_saver = policy_saver.PolicySaver(agent.policy)
+
 
 # dataset
 dataset = replay_buffer.as_dataset(
@@ -141,6 +146,7 @@ for m in range(len(origins)):
 
 # save agent
 train_checkpointer.save(global_step)
+tf_policy_saver.save(policy_dir)
 
 iterations = range(0, eval_interval*len(returns), eval_interval)
 plt.plot(iterations, returns)
